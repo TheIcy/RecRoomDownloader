@@ -4,6 +4,7 @@ A tool for downloading and setting up historical builds of Rec Room, with option
 ## Requirements
 - [DepotDownloader](https://github.com/SteamRE/DepotDownloader/releases) — place `DepotDownloader.exe` in the same folder as `RecRoomDownloader.exe`
 - A Steam account that owns Rec Room
+- [.NET 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 
 ## Setup
 1. Download the latest release from the [Releases](https://github.com/TheIcy/RecRoomDownloader/releases) page
