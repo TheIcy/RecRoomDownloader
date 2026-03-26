@@ -28,6 +28,8 @@ class Program
 
     static async Task Main()
     {
+        await SyncBuildsJson();
+        
         var builds = await LoadBuilds();
         if (builds is not { Count: > 0 })
         {
@@ -318,7 +320,27 @@ class Program
         await zip.ExtractToDirectoryAsync(outputDir, overwriteFiles: true);
         WriteInfo("MelonLoader installed.");
     }
+    
+    static async Task SyncBuildsJson()
+    {
+        WriteInfo("Syncing [green]builds.json[/] from GitHub...");
+
+        using var http = new HttpClient();
+        http.DefaultRequestHeaders.Add("User-Agent", "RecRoomDownloader");
+
+        try
+        {
+            var json = await http.GetStringAsync("https://raw.githubusercontent.com/TheIcy/RecRoomDownloader-Data/main/builds.json");
+            await File.WriteAllTextAsync(BuildsFile, json);
+            WriteInfo("builds.json synced.");
+        }
+        catch (HttpRequestException e)
+        {
+            WriteWarning($"Failed to sync builds.json ({e.StatusCode}). Falling back to local copy.");
+        }
+    }
 
     static void WriteInfo(string msg) => AnsiConsole.MarkupLine($"[green]✓[/] {msg}");
     static void WriteError(string error) => AnsiConsole.MarkupLineInterpolated($"[bold red]✗ Error:[/] {error}");
+    static void WriteWarning(string msg) => AnsiConsole.MarkupLineInterpolated($"[#FFA500]⚠[/] {msg}");
 }
