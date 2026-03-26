@@ -10,7 +10,6 @@ class Program
 {
     const string AppId = "471710";
     const string DepotId = "471711";
-    const string BuildsFile = "builds.json";
     const string UsernameFile = "steam_username.txt";
     const string PasswordFile = "steam_password.txt";
 
@@ -28,12 +27,10 @@ class Program
 
     static async Task Main()
     {
-        await SyncBuildsJson();
-        
         var builds = await LoadBuilds();
         if (builds is not { Count: > 0 })
         {
-            WriteError("builds.json is missing or invalid.");
+            WriteError("Failed to fetch builds.");
             await Task.Delay(3000);
             return;
         }
@@ -78,9 +75,21 @@ class Program
 
     static async Task<List<BuildInfo>?> LoadBuilds()
     {
-        if (!File.Exists(BuildsFile)) return null;
-        var json = await File.ReadAllTextAsync(BuildsFile);
-        return JsonSerializer.Deserialize<List<BuildInfo>>(json);
+        WriteInfo("Fetching [green]builds.json[/] from GitHub...");
+
+        using var http = new HttpClient();
+        http.DefaultRequestHeaders.Add("User-Agent", "RecRoomDownloader");
+
+        try
+        {
+            var json = await http.GetStringAsync("https://raw.githubusercontent.com/TheIcy/RecRoomDownloader-Data/main/builds.json");
+            return JsonSerializer.Deserialize<List<BuildInfo>>(json);
+        }
+        catch (HttpRequestException e)
+        {
+            WriteError($"Failed to fetch builds.json: {e.StatusCode}");
+            return null;
+        }
     }
 
     static async Task<string> LoadOrPrompt(string filePath, Func<string> prompt)
@@ -320,27 +329,7 @@ class Program
         await zip.ExtractToDirectoryAsync(outputDir, overwriteFiles: true);
         WriteInfo("MelonLoader installed.");
     }
-    
-    static async Task SyncBuildsJson()
-    {
-        WriteInfo("Syncing [green]builds.json[/] from GitHub...");
-
-        using var http = new HttpClient();
-        http.DefaultRequestHeaders.Add("User-Agent", "RecRoomDownloader");
-
-        try
-        {
-            var json = await http.GetStringAsync("https://raw.githubusercontent.com/TheIcy/RecRoomDownloader-Data/main/builds.json");
-            await File.WriteAllTextAsync(BuildsFile, json);
-            WriteInfo("builds.json synced.");
-        }
-        catch (HttpRequestException e)
-        {
-            WriteWarning($"Failed to sync builds.json ({e.StatusCode}). Falling back to local copy.");
-        }
-    }
 
     static void WriteInfo(string msg) => AnsiConsole.MarkupLine($"[green]✓[/] {msg}");
     static void WriteError(string error) => AnsiConsole.MarkupLineInterpolated($"[bold red]✗ Error:[/] {error}");
-    static void WriteWarning(string msg) => AnsiConsole.MarkupLineInterpolated($"[#FFA500]⚠[/] {msg}");
 }
